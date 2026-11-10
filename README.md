@@ -18,6 +18,9 @@ Docker Compose stack of the template application, deployed by Dokploy from this 
 3. **Domains**: `backend` → port `8080` (console), `api` → port `8080` (API). `API_BASE_URL`
    must be the API domain and `APP_CORS_ALLOWED_ORIGINS` the console domain.
 4. Deploy. GHCR images must be public, or GHCR credentials must be registered in Dokploy.
+   The images are pulled again on every deployment (`pull_policy: always`), so a redeploy picks up
+   the latest `latest` image; pin `API_IMAGE_TAG` / `BACKEND_IMAGE_TAG` to `sha-<commit>` or
+   `v<version>` for a reproducible release.
 
 On the first start, PostgreSQL runs `postgres/initdb/01-task-domains.sql` (copy of
 `template-java-api/src/main/resources/db/manual/task-domains.sql`; keep both in sync).

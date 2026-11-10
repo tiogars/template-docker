@@ -1,11 +1,16 @@
 # Dokploy deployment of the template application (Docker Compose service, compose path: ./docker-compose.yml).
 # Images are published to GHCR by the GitHub Actions workflows of each repository.
 # No host port is published: assign the domains in Dokploy (backend -> 8080, api -> 8080).
+# Every service is explicitly attached to the compose "default" network: Dokploy appends
+# "dokploy-network" to the services that get a domain, and older versions then dropped the
+# implicit default network, which cut the api off from postgres.
 
 services:
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
+    networks:
+      - default
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-template}
       POSTGRES_USER: ${POSTGRES_USER:-template}
@@ -22,7 +27,11 @@ services:
 
   api:
     image: ghcr.io/tiogars/template-java-api:${API_IMAGE_TAG:-latest}
+    # Without it, a redeploy keeps the locally cached "latest" image.
+    pull_policy: always
     restart: unless-stopped
+    networks:
+      - default
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-template}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-template}
@@ -47,7 +56,10 @@ services:
 
   backend:
     image: ghcr.io/tiogars/template-react-backend:${BACKEND_IMAGE_TAG:-latest}
+    pull_policy: always
     restart: unless-stopped
+    networks:
+      - default
     environment:
       # Served at runtime through /config.js; must be the public URL of the api service.
       API_BASE_URL: ${API_BASE_URL:?API_BASE_URL must be set to the public API URL}
